@@ -1501,7 +1501,7 @@ pub fn mjpeg_to_rgb(data: &[u8], rgba: bool) -> Result<Vec<u8>, NokhwaError> {
         }
     };
 
-    let scanlines_res: Option<Vec<u8>> = jpeg_decompress.read_scanlines_flat();
+    let scanlines_res: Option<Vec<u8>> = jpeg_decompress.read_scanlines_flat().ok();
     // assert!(jpeg_decompress.finish_decompress());
     if !jpeg_decompress.finish_decompress() {
         return Err(NokhwaError::ProcessFrameError {
