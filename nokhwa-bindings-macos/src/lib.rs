@@ -369,7 +369,7 @@ mod internal {
             kCMPixelFormat_8IndexedGray_WhiteIsZero => Some(FrameFormat::GRAY),
             kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
             | kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
-            | 875704438 => Some(FrameFormat::NV12),
+            | 875704438 => Some(FrameFormat::YUYV),
             kCMPixelFormat_24RGB => Some(FrameFormat::RAWRGB),
             _ => None,
         }
@@ -515,6 +515,7 @@ mod internal {
             AVCaptureDeviceType::Telephoto,
             AVCaptureDeviceType::TrueDepth,
             AVCaptureDeviceType::ExternalUnknown,
+            AVCaptureDeviceType::External,
         ])?
         .devices())
     }
@@ -545,6 +546,7 @@ mod internal {
         Telephoto,
         TrueDepth,
         ExternalUnknown,
+        External,
     }
 
     impl From<AVCaptureDeviceType> for *mut Object {
@@ -572,6 +574,7 @@ mod internal {
                 AVCaptureDeviceType::ExternalUnknown => {
                     str_to_nsstr("AVCaptureDeviceTypeExternalUnknown")
                 }
+                AVCaptureDeviceType::External => str_to_nsstr("AVCaptureDeviceTypeExternal"),
             }
         }
     }
