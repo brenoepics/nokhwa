@@ -16,11 +16,13 @@
 
 use nokhwa::{
     nokhwa_initialize,
-    pixel_format::{RgbAFormat, RgbFormat},
+    pixel_format::RgbFormat,
     query,
     utils::{ApiBackend, RequestedFormat, RequestedFormatType},
     CallbackCamera,
 };
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 fn main() {
     // only needs to be run on OSX
@@ -34,21 +36,26 @@ fn main() {
 
     let first_camera = cameras.first().unwrap();
 
-    let mut threaded = CallbackCamera::new(first_camera.index().clone(), format, |buffer| {
-        let image = buffer.decode_image::<RgbAFormat>().unwrap();
-        println!("{}x{} {}", image.width(), image.height(), image.len());
+    let frame_count = Arc::new(Mutex::new(0));
+    let last_time = Arc::new(Mutex::new(Instant::now()));
+
+    let frame_count_clone = Arc::clone(&frame_count);
+    let last_time_clone = Arc::clone(&last_time);
+
+    let mut threaded = CallbackCamera::new(first_camera.index().clone(), format, move |_| {
+        let mut count = frame_count_clone.lock().unwrap();
+        *count += 1;
+        let now = Instant::now();
+        let mut last = last_time_clone.lock().unwrap();
+        if now.duration_since(*last) >= Duration::from_secs(1) {
+            println!("FPS: {}", *count);
+            *count = 0;
+            *last = now;
+        }
     })
     .unwrap();
     threaded.open_stream().unwrap();
-    #[allow(clippy::empty_loop)] // keep it running
     loop {
-        let frame = threaded.poll_frame().unwrap();
-        let image = frame.decode_image::<RgbAFormat>().unwrap();
-        println!(
-            "{}x{} {} naripoggers",
-            image.width(),
-            image.height(),
-            image.len()
-        );
+        threaded.poll_frame().unwrap();
     }
 }
