@@ -212,7 +212,7 @@ mod internal {
         foundation::{NSArray, NSInteger, NSString, NSUInteger},
     };
     use core_media_sys::{
-        kCMPixelFormat_24RGB, kCMPixelFormat_422YpCbCr8_yuvs,
+        kCMPixelFormat_24RGB, kCMPixelFormat_32BGRA, kCMPixelFormat_422YpCbCr8_yuvs,
         kCMPixelFormat_8IndexedGray_WhiteIsZero, kCMVideoCodecType_422YpCbCr8,
         kCMVideoCodecType_JPEG, kCMVideoCodecType_JPEG_OpenDML, CMFormatDescriptionGetMediaSubType,
         CMFormatDescriptionRef, CMSampleBufferRef, CMTime, CMVideoDimensions,
@@ -371,6 +371,7 @@ mod internal {
             | kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
             | 875704438 => Some(FrameFormat::YUYV),
             kCMPixelFormat_24RGB => Some(FrameFormat::RAWRGB),
+            kCMPixelFormat_32BGRA => Some(FrameFormat::BGRA),
             _ => None,
         }
     }
@@ -514,8 +515,9 @@ mod internal {
             AVCaptureDeviceType::WideAngle,
             AVCaptureDeviceType::Telephoto,
             AVCaptureDeviceType::TrueDepth,
-            AVCaptureDeviceType::ExternalUnknown,
+            // AVCaptureDeviceType::ExternalUnknown,
             AVCaptureDeviceType::External,
+            AVCaptureDeviceType::ContinuityCamera,
         ])?
         .devices())
     }
@@ -547,6 +549,7 @@ mod internal {
         TrueDepth,
         ExternalUnknown,
         External,
+        ContinuityCamera,
     }
 
     impl From<AVCaptureDeviceType> for *mut Object {
@@ -575,6 +578,9 @@ mod internal {
                     str_to_nsstr("AVCaptureDeviceTypeExternalUnknown")
                 }
                 AVCaptureDeviceType::External => str_to_nsstr("AVCaptureDeviceTypeExternal"),
+                AVCaptureDeviceType::ContinuityCamera => {
+                    str_to_nsstr("AVCaptureDeviceTypeContinuityCamera")
+                }
             }
         }
     }

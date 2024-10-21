@@ -299,6 +299,7 @@ pub enum FrameFormat {
     NV12,
     GRAY,
     RAWRGB,
+    BGRA,
 }
 
 impl Display for FrameFormat {
@@ -319,6 +320,9 @@ impl Display for FrameFormat {
             FrameFormat::NV12 => {
                 write!(f, "NV12")
             }
+            FrameFormat::BGRA => {
+                write!(f, "BGRA")
+            }
         }
     }
 }
@@ -332,6 +336,7 @@ impl FromStr for FrameFormat {
             "GRAY" => Ok(FrameFormat::GRAY),
             "RAWRGB" => Ok(FrameFormat::RAWRGB),
             "NV12" => Ok(FrameFormat::NV12),
+            "BGRA" => Ok(FrameFormat::BGRA),
             _ => Err(NokhwaError::StructureError {
                 structure: "FrameFormat".to_string(),
                 error: format!("No match for {s}"),
@@ -349,6 +354,7 @@ pub const fn frame_formats() -> &'static [FrameFormat] {
         FrameFormat::NV12,
         FrameFormat::GRAY,
         FrameFormat::RAWRGB,
+        FrameFormat::BGRA,
     ]
 }
 
@@ -360,6 +366,7 @@ pub const fn color_frame_formats() -> &'static [FrameFormat] {
         FrameFormat::YUYV,
         FrameFormat::NV12,
         FrameFormat::RAWRGB,
+        FrameFormat::BGRA,
     ]
 }
 
@@ -1826,6 +1833,58 @@ pub fn buf_nv12_to_rgb(
                 out[base_index + 4] = px1[1];
                 out[base_index + 5] = px1[2];
             }
+        }
+    }
+
+    Ok(())
+}
+
+#[inline]
+pub fn bgra_to_rgb(
+    resolution: Resolution,
+    data: &[u8],
+    rgba: bool,
+) -> Result<Vec<u8>, NokhwaError> {
+    let pixel_size = if rgba { 4 } else { 3 };
+    let buffer_size = (pixel_size * resolution.width() * resolution.height()) as usize;
+
+    let mut dest = vec![0; buffer_size];
+    buf_bgra_to_rgb(resolution, data, &mut dest, rgba)?;
+
+    Ok(dest)
+}
+
+#[allow(clippy::similar_names)]
+#[inline]
+pub fn buf_bgra_to_rgb(
+    resolution: Resolution,
+    data: &[u8],
+    out: &mut [u8],
+    rgba: bool,
+) -> Result<(), NokhwaError> {
+    // TODO: Error on excess pixels in stride for now, will need to figure out how to handle it
+    let expected_length = (resolution.width() * resolution.height() * 4) as usize;
+    if resolution.width() % 2 != 0 || resolution.height() % 2 != 0 || data.len() != expected_length
+    {
+        return Err(NokhwaError::ProcessFrameError {
+            src: FrameFormat::NV12,
+            destination: "RGB".to_string(),
+            error: "bad resolution".to_string(),
+        });
+    }
+
+    if rgba {
+        out.copy_from_slice(data);
+        for chunk in out.chunks_mut(4) {
+            chunk.swap(0, 2);
+        }
+    } else {
+        let mut index = 0;
+        for chunk in data.chunks(4) {
+            out[index] = chunk[2];
+            out[index + 1] = chunk[1];
+            out[index + 2] = chunk[0];
+            index += 3;
         }
     }
 
