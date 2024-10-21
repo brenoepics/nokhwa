@@ -180,6 +180,9 @@ pub mod wmf {
             FrameFormat::NV12 => MF_VIDEO_FORMAT_NV12,
             FrameFormat::GRAY => MF_VIDEO_FORMAT_GRAY,
             FrameFormat::RAWRGB => MF_VIDEO_FORMAT_RGB24,
+            // Windows doesn't actually have support for/a GUID for BGRA.
+            // There's ARGB, which we could implement if necessary.
+            _ => unimplemented!(),
         }
     }
 
