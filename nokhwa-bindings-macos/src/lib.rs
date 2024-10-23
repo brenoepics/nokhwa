@@ -202,8 +202,8 @@ mod internal {
         AVMediaTypeMetadataObject, AVMediaTypeMuxed, AVMediaTypeSubtitle, AVMediaTypeText,
         AVMediaTypeTimecode, AVMediaTypeVideo, CGPoint, CMSampleBufferGetImageBuffer,
         CMVideoFormatDescriptionGetDimensions, CVImageBufferRef, CVPixelBufferGetBaseAddress,
-        CVPixelBufferGetDataSize, CVPixelBufferLockBaseAddress, CVPixelBufferUnlockBaseAddress,
-        NSObject, OSType,
+        CVPixelBufferGetDataSize, CVPixelBufferGetPixelFormatType, CVPixelBufferLockBaseAddress,
+        CVPixelBufferUnlockBaseAddress, NSObject, OSType,
     };
 
     use block::ConcreteBlock;
@@ -433,7 +433,16 @@ mod internal {
                     let ptr = bufferlck_cv.cast::<Sender<(Vec<u8>, FrameFormat)>>();
                     Arc::from_raw(ptr)
                 };
-                if let Err(_) = buffer_sndr.send((buffer_as_vec, FrameFormat::GRAY)) {
+
+                let fourcc = unsafe { CVPixelBufferGetPixelFormatType(image_buffer) };
+                let format = match raw_fcc_to_frameformat(fourcc) {
+                    Some(f) => f,
+                    None => {
+                        return;
+                    }
+                };
+
+                if let Err(_) = buffer_sndr.send((buffer_as_vec, format)) {
                     // FIXME: dont, what the fuck???
                     return;
                 }

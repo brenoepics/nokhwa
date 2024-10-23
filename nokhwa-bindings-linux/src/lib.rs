@@ -764,10 +764,10 @@ mod internal {
             ))
         }
 
-        fn frame_raw(&mut self) -> Result<Cow<[u8]>, NokhwaError> {
+        fn frame_raw(&mut self) -> Result<(Cow<[u8]>, FrameFormat), NokhwaError> {
             match &mut self.stream_handle {
                 Some(sh) => match sh.next() {
-                    Ok((data, _)) => Ok(Cow::Borrowed(data)),
+                    Ok((data, _)) => Ok((Cow::Borrowed(data), self.frame_format())),
                     Err(why) => Err(NokhwaError::ReadFrameError(why.to_string())),
                 },
                 None => Err(NokhwaError::ReadFrameError(
@@ -967,7 +967,7 @@ mod internal {
             todo!()
         }
 
-        fn frame_raw(&mut self) -> Result<Cow<[u8]>, NokhwaError> {
+        fn frame_raw(&mut self) -> Result<(Cow<[u8]>, FrameFormat), NokhwaError> {
             todo!()
         }
 

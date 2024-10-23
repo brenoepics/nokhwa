@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     borrow::Borrow,
     cmp::Ordering,
+    collections::HashMap,
     fmt::{Display, Formatter},
     str::FromStr,
 };
@@ -25,6 +26,10 @@ pub enum RequestedFormatType {
     HighestFrameRate(u32),
     Exact(CameraFormat),
     Closest(CameraFormat),
+    ClosestIgnoringFormat {
+        resolution: Resolution,
+        frame_rate: u32,
+    },
     None,
 }
 
@@ -194,6 +199,44 @@ impl RequestedFormat<'_> {
                 framerate_map.sort_by(|a, b| a.0.cmp(&b.0));
                 let frame_rate = framerate_map.first()?.1;
                 Some(CameraFormat::new(resolution, c.format(), frame_rate))
+            }
+            // Used by Cap so that we can handle multiple formats ourself.
+            // Also removes the hard resolution requirement.
+            #[allow(clippy::cast_possible_wrap)]
+            RequestedFormatType::ClosestIgnoringFormat {
+                resolution,
+                frame_rate,
+            } => {
+                let same_fmt_formats = all_formats.iter().copied().collect::<Vec<CameraFormat>>();
+                let mut resolution_map = same_fmt_formats
+                    .iter()
+                    .map(|x| {
+                        let res = x.resolution();
+                        let x_diff = res.x() as i32 - resolution.x() as i32;
+                        let y_diff = res.y() as i32 - resolution.y() as i32;
+                        let dist_no_sqrt = (x_diff.abs()).pow(2) + (y_diff.abs()).pow(2);
+                        (dist_no_sqrt, res)
+                    })
+                    .collect::<Vec<(i32, Resolution)>>();
+                resolution_map.sort_by(|a, b| a.0.cmp(&b.0));
+                resolution_map.dedup_by(|a, b| a.0.eq(&b.0));
+                let resolution = resolution_map.first()?.1;
+
+                let frame_rates = all_formats
+                    .iter()
+                    .map(|cfmt| (cfmt.frame_rate(), cfmt.format()))
+                    .collect::<HashMap<u32, FrameFormat>>();
+                // sort FPSes
+                let mut framerate_map = frame_rates
+                    .iter()
+                    .map(|(x, f)| {
+                        let abs = *x as i32 - frame_rate as i32;
+                        (abs.unsigned_abs(), (*x, *f))
+                    })
+                    .collect::<Vec<(u32, (u32, FrameFormat))>>();
+                framerate_map.sort_by(|a, b| a.0.cmp(&b.0));
+                let frame_rate = framerate_map.first()?.1;
+                Some(CameraFormat::new(resolution, frame_rate.1, frame_rate.0))
             }
             RequestedFormatType::None => all_formats
                 .iter()
