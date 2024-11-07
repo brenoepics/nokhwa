@@ -281,7 +281,7 @@ impl CaptureBackendTrait for AVFoundationCaptureDevice {
         self.refresh_camera_format()?;
         let cfmt = self.camera_format();
         let b = self.frame_raw()?;
-        let buffer = Buffer::new(cfmt.resolution(), b.0.as_ref(), b.1);
+        let buffer = Buffer::new_from_cow(cfmt.resolution(), b.0, b.1);
         let _ = self.frame_buffer_receiver.drain();
         Ok(buffer)
     }

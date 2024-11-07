@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+use std::borrow::Cow;
+
 use crate::{
     error::NokhwaError,
     pixel_format::FormatDecoder,
@@ -41,6 +43,21 @@ impl Buffer {
         Self {
             resolution: res,
             buffer: Bytes::copy_from_slice(buf),
+            source_frame_format,
+        }
+    }
+
+    /// Creates a new buffer with a [`&[u8]`].
+    #[must_use]
+    #[inline]
+    pub fn new_from_cow(
+        res: Resolution,
+        buf: Cow<'_, [u8]>,
+        source_frame_format: FrameFormat,
+    ) -> Self {
+        Self {
+            resolution: res,
+            buffer: buf.into_owned().into(),
             source_frame_format,
         }
     }
